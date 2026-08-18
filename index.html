@@ -13,7 +13,7 @@ main{padding:17px 16px 105px}.card{background:#fff;border-radius:18px;padding:16
 textarea,select{width:100%;border:1px solid #d5dde2;border-radius:12px;padding:12px;background:#fff;font:inherit}textarea{min-height:125px}
 button{width:100%;border:0;border-radius:13px;padding:13px;background:var(--n);color:#fff;font-weight:800;margin-top:10px}.secondary{background:#fff;color:var(--n);border:1px solid #cfd8df}
 #answer,#procedure,#sources{display:none}.step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid #edf0f2;font-size:13px;line-height:1.4}.num{min-width:28px;height:28px;border-radius:50%;background:var(--b);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
-.notice{background:#eef4f8;border-radius:12px;padding:11px;font-size:11px;line-height:1.45;margin-top:10px}a{color:#164a73;font-weight:700;text-decoration:none}
+.format{padding:11px 0;border-bottom:1px solid #edf0f2;font-size:13px;line-height:1.4}.format small{display:block;color:var(--m);margin-top:4px}.notice{background:#eef4f8;border-radius:12px;padding:11px;font-size:11px;line-height:1.45;margin-top:10px}a{color:#164a73;font-weight:700;text-decoration:none}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,100%);background:#fffffff2;backdrop-filter:blur(15px);display:flex;justify-content:space-around;border-top:1px solid #dfe4e7;padding:9px 2px calc(9px + env(safe-area-inset-bottom))}nav div{font-size:10px;text-align:center;color:#64727c}nav b{display:block;font-size:19px}
 </style></head>
 <body><div class="app">
@@ -26,6 +26,7 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,
 
 <div class="card" id="answer"><div class="title">🤖 Respuesta JUDIPOL</div><div id="answerText"></div></div>
 <div class="card" id="procedure"><div class="title">👮 Procedimiento a realizar por el uniformado</div><div id="procedureText"></div></div>
+<div class="card" id="formats"><div class="title">📄 Formatos a diligenciar</div><div id="formatsText"></div></div>
 <div class="card" id="sources"><div class="title">🌐 Fuentes oficiales</div><div id="sourceText"></div></div>
 </main>
 <nav><div><b>⌂</b>Inicio</div><div><b>⚖</b>JUDIPOL</div><div><b>👮</b>Procedimientos</div><div><b>🤖</b>Asistente</div></nav>
@@ -36,26 +37,77 @@ const sources=[
 ["Policía Nacional — Procesos y Procedimientos","https://www.policia.gov.co/contenido/procesos-procedimientos"],
 ["Policía Nacional — Reglamentos","https://www.policia.gov.co/contenido/reglamentos"],
 ["Función Pública — Gestor Normativo","https://www.funcionpublica.gov.co/eva/gestorNormativo/gestor-normativo"],
-["Ley 1801 de 2016 — Gestor Normativo","https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?1801=&i=80538"]
+["Ley 1801 de 2016 — Gestor Normativo","https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?1801=&i=80538"],
+["Policía Nacional — Estándar 7 / procedimientos policiales","https://www.policia.gov.co/sites/default/files/descargables/Cartilla%20Centro%20de%20Est%C3%A1ndares%20de%20la%20Polic%C3%ADa%20Nacional.pdf"]
 ];
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function classify(s){s=s.toLowerCase();if(/captur|flagrancia|orden judicial|delito/.test(s))return"captura";if(/registr|cacheo|requisa/.test(s))return"registro";if(/arma|cuchillo|navaja|cortopunzante|munici|explosiv/.test(s))return"arma";return"convivencia";}
 const data={
-arma:{name:"Situación relacionada con arma o elemento cortopunzante",steps:["Verificar objetivamente el elemento y las circunstancias de tiempo, modo y lugar.","Identificar la conducta concreta y contrastarla con la normativa vigente.","Verificar la competencia y la actuación legalmente procedente.","Garantizar dignidad, derechos y proporcionalidad durante la actuación.","Realizar únicamente la actuación autorizada por la norma y el procedimiento institucional.","Registrar y documentar la actuación conforme a los sistemas y formatos correspondientes."]},
-captura:{name:"Posible situación de captura",steps:["Verificar el fundamento jurídico: orden judicial o supuesto legal de flagrancia.","Confirmar las circunstancias que sustentan la actuación.","Informar y garantizar los derechos correspondientes.","Cumplir el procedimiento y poner a disposición de la autoridad competente dentro de los términos legales.","Documentar las circunstancias y actuaciones realizadas."]},
-registro:{name:"Posible registro a persona",steps:["Identificar la circunstancia legal que habilita el registro.","Verificar competencia y circunstancias concretas.","Realizar la actuación conforme al procedimiento aplicable y respetando la dignidad.","Documentar el resultado y los elementos encontrados cuando corresponda."]},
-convivencia:{name:"Posible comportamiento contrario a la convivencia",steps:["Precisar objetivamente el comportamiento y sus circunstancias.","Identificar la conducta y la disposición vigente aplicable.","Verificar competencia de la autoridad de Policía.","Garantizar derechos y debido proceso.","Aplicar únicamente la medida legalmente procedente.","Registrar la actuación en los sistemas y formatos institucionales."]}};
+arma:{
+name:"Situación relacionada con arma o elemento cortopunzante",
+steps:[
+"Verificar objetivamente el elemento y las circunstancias de tiempo, modo y lugar.",
+"Identificar la conducta concreta y contrastarla con la normativa vigente.",
+"Verificar la competencia y la actuación legalmente procedente.",
+"Garantizar dignidad, derechos y proporcionalidad durante la actuación.",
+"Realizar únicamente la actuación autorizada por la norma y el procedimiento institucional.",
+"Registrar y documentar la actuación conforme a los sistemas y formatos correspondientes."
+],
+formats:[
+["Registro/acta de incautación que corresponda","El formato institucional exacto debe seleccionarse según el tipo de elemento y el procedimiento vigente.","Verificar versión vigente en la fuente institucional antes de diligenciar."]
+]},
+captura:{
+name:"Posible situación de captura",
+steps:[
+"Verificar el fundamento jurídico: orden judicial o supuesto legal de flagrancia.",
+"Confirmar las circunstancias que sustentan la actuación.",
+"Informar y garantizar los derechos correspondientes.",
+"Cumplir el procedimiento de captura y poner a disposición de la autoridad competente dentro de los términos legales.",
+"Documentar las circunstancias y actuaciones realizadas."
+],
+formats:[
+["Formato FPJ-04 — Actuación del primer responsable","Identificado en material institucional de competencias y desempeño.","Verificar versión vigente y aplicabilidad al caso."],
+["Acta de incautación FPJ-31, cuando corresponda","Aplicable si existe incautación que deba documentarse.","Verificar versión vigente y naturaleza del elemento."]
+]},
+registro:{
+name:"Posible registro a persona",
+steps:[
+"Identificar la circunstancia legal que habilita el registro.",
+"Verificar competencia y circunstancias concretas.",
+"Realizar la actuación conforme al procedimiento aplicable y respetando la dignidad.",
+"Documentar el resultado y los elementos encontrados cuando corresponda."
+],
+formats:[
+["Registro o informe institucional que corresponda","La aplicación debe recuperar el formato específico del procedimiento vigente.","No diligenciar un formato no verificado."]
+]},
+convivencia:{
+name:"Posible comportamiento contrario a la convivencia",
+steps:[
+"Precisar objetivamente el comportamiento y sus circunstancias.",
+"Identificar la conducta y la disposición vigente aplicable.",
+"Verificar competencia de la autoridad de Policía.",
+"Garantizar derechos y debido proceso.",
+"Aplicar únicamente la medida legalmente procedente.",
+"Registrar la actuación en los sistemas y formatos institucionales."
+],
+formats:[
+["Formato de Convivencia y orden de comparendo","La Policía Nacional identifica la orden de comparendo como instrumento del proceso de convivencia; el formato vigente debe verificarse antes de usarlo.","Verificar la versión institucional vigente y la resolución que lo adopta."]
+]}};
+
 function render(){
 const h=document.getElementById("hechos").value.trim();if(!h){alert("Describa el hecho antes de analizar.");return}
 const d=data[classify(h)];
 document.getElementById("answerText").innerHTML=`<div class="notice"><b>${d.name}</b><br><br><b>Hecho:</b> ${esc(h)}<br><br>JUDIPOL ha identificado una situación inicial. La determinación jurídica definitiva requiere verificar la norma vigente y las circunstancias concretas.</div>`;
 document.getElementById("procedureText").innerHTML=d.steps.map((x,i)=>`<div class="step"><span class="num">${i+1}</span><span>${x}</span></div>`).join("");
+document.getElementById("formatsText").innerHTML=d.formats.map(x=>`<div class="format"><b>${x[0]}</b><small>${x[1]}<br><b>${x[2]}</b></small></div>`).join("")+
+`<div class="notice">⚠️ JUDIPOL no debe inventar nombres o códigos de formatos. Antes de diligenciar, debe verificar en la fuente institucional la versión vigente y la aplicabilidad al procedimiento concreto.</div>`;
+
 document.getElementById("sourceText").innerHTML=sources.map(x=>`<div class="step"><span>🔗</span><a href="${x[1]}" target="_blank" rel="noopener">${x[0]}</a></div>`).join("")+
 `<div class="notice">La aplicación consulta las fuentes mediante enlaces web. Para una consulta automática en tiempo real dentro de JUDIPOL se requiere un backend seguro que haga la búsqueda y entregue las fuentes a la aplicación.</div>`;
-["answer","procedure","sources"].forEach(id=>document.getElementById(id).style.display="block");
+["answer","procedure","formats","sources"].forEach(id=>document.getElementById(id).style.display="block");
 document.getElementById("answer").scrollIntoView({behavior:"smooth",block:"start"});
 }
 document.getElementById("analizar").addEventListener("click",render);
-document.getElementById("limpiar").addEventListener("click",()=>{document.getElementById("hechos").value="";["answer","procedure","sources"].forEach(id=>document.getElementById(id).style.display="none")});
+document.getElementById("limpiar").addEventListener("click",()=>{document.getElementById("hechos").value="";["answer","procedure","formats","sources"].forEach(id=>document.getElementById(id).style.display="none")});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
